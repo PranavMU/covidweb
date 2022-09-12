@@ -9,8 +9,8 @@ app.use(express.json());
 const { connection } = require('./connector');
 const { tallySchema } = require('./schema');
 const { json } = require('express');
-
-const data=require("./data");
+const { data } = require('./data')
+const data1=require("./data");
 
 const refreshAll = async () => {
     await connection.deleteMany({})
@@ -55,7 +55,7 @@ app.get("/totalDeath",(req,res)=>{//4
   app.get("/hotspotStates",async (req,res)=>{
     try{
         let tot=[];
-        const recoveredData= await data;
+        const recoveredData= await data1;
         for(let i=0;i<(recoveredData.data).length;i++){
             let idx=((recoveredData.data[i].infected-recoveredData.data[i].recovered)/recoveredData.data[i].infected).toFixed(5);
             if(idx>0.1){
@@ -64,7 +64,7 @@ app.get("/totalDeath",(req,res)=>{//4
         }
         console.log(tot)
         res.json({
-            data: {tot:tot}
+            data: {states:tot}
         })
     }catch(e){
         res.status(303).json({
@@ -75,14 +75,27 @@ app.get("/totalDeath",(req,res)=>{//4
 })
  
 
-  app.get("/healthyStates",(req,res)=>{//4
-    // var sub = $"$infected" - "$recovered";
-    connection.aggregate([{$group: {state:"$state",rate:{$divide:[ { $subtract: [ "$infected","$recovered" ]},"$$infected"]},$condif:{ $lt: [ "$rate", 0.005 ] }}}]).then((data)=> {
-      res.send(data)
-  
-    })
-  })
+  app.get("/healthyStates",async (req,res)=>{
+    try{
+      let tot=[];
+      const recoveredData= await data1;
+      for(let i=0;i<(recoveredData.data).length;i++){
+          let idx=((recoveredData.data[i].death)/recoveredData.data[i].infected).toFixed(5);
+          if(idx<0.005){
+          tot.push(`{states:${recoveredData.data[i].state},mortality: ${idx}}`);
+          }
+      }
+      console.log(tot)
+      res.json({
+          data: {states:tot}
+      })
+  }catch(e){
+      res.status(303).json({
 
+          message:e.message
+      })
+  }
+})
 
 
 
