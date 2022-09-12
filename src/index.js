@@ -10,7 +10,7 @@ const { connection } = require('./connector');
 const { tallySchema } = require('./schema');
 const { json } = require('express');
 
-const { data } = require('./data')
+const data=require("./data");
 
 const refreshAll = async () => {
     await connection.deleteMany({})
@@ -52,13 +52,28 @@ app.get("/totalDeath",(req,res)=>{//4
     })
   })
 
-  app.get("/hotspotStates",(req,res)=>{//4
-    // var sub = $"$infected" - "$recovered";
-    connection.aggregate([{$group: {state:"$state",rate:{$divide:[ { $subtract: [ "$infected","$recovered" ]},"$$infected"]},$condif:{ $gt: [ "$rate", 0.1 ] }}}]).then((data)=> {
-      res.send(data)
-  
-    })
-  })
+  app.get("/hotspotStates",async (req,res)=>{
+    try{
+        let tot=[];
+        const recoveredData= await data;
+        for(let i=0;i<(recoveredData.data).length;i++){
+            let idx=((recoveredData.data[i].infected-recoveredData.data[i].recovered)/recoveredData.data[i].infected).toFixed(5);
+            if(idx>0.1){
+            tot.push(`{states:${recoveredData.data[i].state},rate: ${idx}}`);
+            }
+        }
+        console.log(tot)
+        res.json({
+            data: {tot:tot}
+        })
+    }catch(e){
+        res.status(303).json({
+
+            message:e.message
+        })
+    }
+})
+ 
 
   app.get("/healthyStates",(req,res)=>{//4
     // var sub = $"$infected" - "$recovered";
